@@ -1,0 +1,63 @@
+name: RAS notice email alerts
+
+on:
+  # Triggered by an external scheduler (for example cron-job.org) via the
+  # workflow_dispatch API; only users with write access can start it.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ras-notice-monitor
+  cancel-in-progress: false
+
+jobs:
+  check-notices:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Restore encrypted baselines
+        uses: actions/cache/restore@v4
+        with:
+          path: state/users
+          key: ras-user-state-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            ras-user-state-
+
+      - name: Check RAS and send email alerts
+        run: npm run monitor:cloud
+        env:
+          GMAIL_CLIENT_ID: ${{ secrets.GMAIL_CLIENT_ID }}
+          GMAIL_CLIENT_SECRET: ${{ secrets.GMAIL_CLIENT_SECRET }}
+          GMAIL_REFRESH_TOKEN: ${{ secrets.GMAIL_REFRESH_TOKEN }}
+          RAS_STATE_KEY: ${{ secrets.RAS_STATE_KEY }}
+          RAS_RC_ID: ${{ vars.RAS_RC_ID }}
+          # "id:alert-email[:cycle-id]" entries; each id needs RAS_EMAIL_<ID>
+          # and RAS_PASSWORD_<ID> secrets, which the script reads from this JSON.
+          RAS_USERS: ${{ vars.RAS_USERS }}
+          RAS_USER_SECRETS: ${{ toJSON(secrets) }}
+
+      # Saved even when one user's check fails, so users that succeeded are not
+      # emailed the same items again on the next run.
+      - name: Save encrypted baselines
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: state/users
+          key: ras-user-state-${{ github.run_id }}-${{ github.run_attempt }}

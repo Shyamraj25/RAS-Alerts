@@ -1,0 +1,6 @@
+node_modules/
+npm-debug.log*
+credentials.json
+client_secret*.json
+.gmail-token.json
+state/
