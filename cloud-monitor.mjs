@@ -13,6 +13,7 @@ import { chromium } from "playwright";
 const portalUrl = "https://placement.iitk.ac.in/login";
 const defaultPlacementCycleId = process.env.RAS_RC_ID || "18";
 const rowsPerPage = 100;
+const portalTimezone = "Asia/Kolkata";
 const emailPattern = /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/;
 
 function requiredSecret(name) {
@@ -361,6 +362,7 @@ async function writeState(statePath, seenNotices, seenOpenings, knownCompanies) 
       seenNotices: uniqueLatest(seenNotices).slice(-2000),
       seenOpenings: uniqueLatest(seenOpenings).slice(-2000),
       knownCompanies: uniqueLatest(knownCompanies).slice(-500),
+      timezone: portalTimezone,
       updatedAt: new Date().toISOString(),
     }),
     "utf8",
@@ -433,7 +435,8 @@ async function sendEmail(gmail, recipient, { notices, openings }) {
 async function checkUser(browser, gmail, user) {
   const log = (message) => process.stdout.write(`[${user.id}] ${message}\n`);
   // A separate context per user keeps each RAS login session isolated.
-  const context = await browser.newContext();
+  // The portal shows times in the browser's time zone; the runner uses UTC.
+  const context = await browser.newContext({ timezoneId: portalTimezone });
   try {
     const page = await context.newPage();
     page.setDefaultTimeout(30000);
@@ -457,10 +460,12 @@ async function processResults(gmail, user, log, { companies, notices, openings }
   const { statePath, recipient } = user;
   const companyNames = companies.map(({ name }) => name);
   const previousState = await readState(statePath, log);
-  if (!previousState) {
+  if (!previousState || previousState.timezone !== portalTimezone) {
+    // Saved rows include their displayed time, so rows saved in another time
+    // zone would all look new; re-save the baseline instead of emailing them.
     await writeState(statePath, notices, openings, companyNames);
     log(
-      `Initial baseline saved for ${notices.length} notice(s) and ${openings.length} job opening(s); no email sent.`,
+      `${previousState ? "Baseline re-saved for the new time zone" : "Initial baseline saved"} for ${notices.length} notice(s) and ${openings.length} job opening(s); no email sent.`,
     );
   } else {
     const previousSet = new Set(previousState.seenNotices);
