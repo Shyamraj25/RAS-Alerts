@@ -58,10 +58,15 @@ jobs:
           GMAIL_REFRESH_TOKEN: ${{ secrets.GMAIL_REFRESH_TOKEN }}
           RAS_STATE_KEY: ${{ secrets.RAS_STATE_KEY }}
           RAS_RC_ID: ${{ vars.RAS_RC_ID }}
-          # "id:alert-email[:cycle-id]" entries; each id needs RAS_EMAIL_<ID>
-          # and RAS_PASSWORD_<ID> secrets, which the script reads from this JSON.
-          RAS_USERS: ${{ vars.RAS_USERS }}
-          RAS_USER_SECRETS: ${{ toJSON(secrets) }}
+          # One block per person. Secrets are listed by name on purpose: handing
+          # the whole secrets object to the script makes GitHub hold the run
+          # for approval. To add a person, copy a block and change the id.
+          RAS_USERS_ARPAN: ${{ vars.RAS_USERS_ARPAN }}
+          RAS_EMAIL_ARPAN: ${{ secrets.RAS_EMAIL_ARPAN }}
+          RAS_PASSWORD_ARPAN: ${{ secrets.RAS_PASSWORD_ARPAN }}
+          RAS_USERS_SHYAM: ${{ vars.RAS_USERS_SHYAM }}
+          RAS_EMAIL_SHYAM: ${{ secrets.RAS_EMAIL_SHYAM }}
+          RAS_PASSWORD_SHYAM: ${{ secrets.RAS_PASSWORD_SHYAM }}
 
       # Saved even when one user's check fails, so users that succeeded are not
       # emailed the same items again on the next run.

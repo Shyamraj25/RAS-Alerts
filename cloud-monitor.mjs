@@ -24,55 +24,40 @@ function requiredSecret(name) {
   return value;
 }
 
-// Users are listed in the RAS_USERS variable as "id:alert-email[:cycle-id]"
-// entries separated by commas or new lines, each with RAS_EMAIL_<ID> and
-// RAS_PASSWORD_<ID> secrets. Logs are public, so they show only the id.
+// Each person has an Actions variable RAS_USERS_<ID> holding "alert-email" or
+// "alert-email:cycle-id" (an "id:" prefix is also accepted and ignored), plus
+// RAS_EMAIL_<ID> and RAS_PASSWORD_<ID> secrets. The workflow passes each of
+// them by name, so GitHub does not flag it for exposing all secrets.
+// Logs are public, so they show only the id.
 function readUsers() {
-  const entries = (process.env.RAS_USERS ?? "")
-    .split(/[\n,;]+/)
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-  if (entries.length === 0) {
+  const prefix = "RAS_USERS_";
+  const users = Object.keys(process.env)
+    .filter((name) => name.startsWith(prefix) && process.env[name].trim())
+    .sort()
+    .map((name) => {
+      const id = name.slice(prefix.length);
+      const parts = process.env[name].split(":").map((part) => part.trim());
+      const [recipient, placementCycleId] = parts[0].includes("@")
+        ? parts
+        : parts.slice(1);
+      return {
+        id,
+        email: process.env[`RAS_EMAIL_${id}`],
+        password: process.env[`RAS_PASSWORD_${id}`],
+        recipient,
+        placementCycleId: placementCycleId || defaultPlacementCycleId,
+        statePath: `state/users/${id.toLowerCase()}.json`,
+      };
+    });
+  if (users.length === 0) {
     throw new Error(
-      "The RAS_USERS Actions variable is empty. Add one id:alert-email line per user.",
+      "No RAS_USERS_<ID> variables found. Create one per person (value: their alert email) and list it in the workflow.",
     );
   }
-
-  const secrets = JSON.parse(process.env.RAS_USER_SECRETS || "{}");
-  const users = [];
-  entries.forEach((entry, index) => {
-    const [id, recipient, placementCycleId = defaultPlacementCycleId] = entry
-      .split(":")
-      .map((part) => part.trim());
-    const validId = /^[A-Za-z0-9_]+$/.test(id);
-    const secretSuffix = id.toUpperCase();
-    users.push({
-      // An invalid id is never logged; the entry's line number is used instead.
-      id: validId ? id : `line-${index + 1}`,
-      validId,
-      // Users with the same id would share one state file.
-      duplicate: users.some(
-        (user) => user.id.toLowerCase() === id.toLowerCase(),
-      ),
-      email: secrets[`RAS_EMAIL_${secretSuffix}`],
-      password: secrets[`RAS_PASSWORD_${secretSuffix}`],
-      recipient,
-      placementCycleId,
-      statePath: `state/users/${id.toLowerCase()}.json`,
-    });
-  });
   return users;
 }
 
 function validateUser(user) {
-  if (!user.validId) {
-    throw new Error(
-      "This RAS_USERS entry must start with an id made of letters, numbers, or underscores, followed by :alert-email.",
-    );
-  }
-  if (user.duplicate) {
-    throw new Error(`RAS_USERS id "${user.id}" is used more than once.`);
-  }
   if (!emailPattern.test(user.recipient ?? "")) {
     throw new Error(`Alert email for user "${user.id}" is not a valid address.`);
   }
@@ -81,12 +66,15 @@ function validateUser(user) {
       `Placement cycle ID for user "${user.id}" must contain only letters, numbers, underscores, or hyphens.`,
     );
   }
-  const suffix = user.id.toUpperCase();
   if (!user.email) {
-    throw new Error(`Missing required GitHub Actions secret: RAS_EMAIL_${suffix}`);
+    throw new Error(
+      `Missing GitHub Actions secret RAS_EMAIL_${user.id} (it must also be listed in the workflow).`,
+    );
   }
   if (!user.password) {
-    throw new Error(`Missing required GitHub Actions secret: RAS_PASSWORD_${suffix}`);
+    throw new Error(
+      `Missing GitHub Actions secret RAS_PASSWORD_${user.id} (it must also be listed in the workflow).`,
+    );
   }
 }
 
