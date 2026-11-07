@@ -58,15 +58,35 @@ jobs:
           GMAIL_REFRESH_TOKEN: ${{ secrets.GMAIL_REFRESH_TOKEN }}
           RAS_STATE_KEY: ${{ secrets.RAS_STATE_KEY }}
           RAS_RC_ID: ${{ vars.RAS_RC_ID }}
-          # One block per person. Secrets are listed by name on purpose: handing
-          # the whole secrets object to the script makes GitHub hold the run
-          # for approval. To add a person, copy a block and change the id.
-          RAS_USERS_ARPAN: ${{ vars.RAS_USERS_ARPAN }}
+          # People are listed in the RAS_USERS variable (id:alert-email, one per
+          # line). Each id's secrets are passed by name for the fixed ids below;
+          # handing the whole secrets object to the script makes GitHub hold
+          # every run for approval. New people use a free id from U1 to U10.
+          RAS_USERS: ${{ vars.RAS_USERS }}
           RAS_EMAIL_ARPAN: ${{ secrets.RAS_EMAIL_ARPAN }}
           RAS_PASSWORD_ARPAN: ${{ secrets.RAS_PASSWORD_ARPAN }}
-          RAS_USERS_SHYAM: ${{ vars.RAS_USERS_SHYAM }}
           RAS_EMAIL_SHYAM: ${{ secrets.RAS_EMAIL_SHYAM }}
           RAS_PASSWORD_SHYAM: ${{ secrets.RAS_PASSWORD_SHYAM }}
+          RAS_EMAIL_U1: ${{ secrets.RAS_EMAIL_U1 }}
+          RAS_PASSWORD_U1: ${{ secrets.RAS_PASSWORD_U1 }}
+          RAS_EMAIL_U2: ${{ secrets.RAS_EMAIL_U2 }}
+          RAS_PASSWORD_U2: ${{ secrets.RAS_PASSWORD_U2 }}
+          RAS_EMAIL_U3: ${{ secrets.RAS_EMAIL_U3 }}
+          RAS_PASSWORD_U3: ${{ secrets.RAS_PASSWORD_U3 }}
+          RAS_EMAIL_U4: ${{ secrets.RAS_EMAIL_U4 }}
+          RAS_PASSWORD_U4: ${{ secrets.RAS_PASSWORD_U4 }}
+          RAS_EMAIL_U5: ${{ secrets.RAS_EMAIL_U5 }}
+          RAS_PASSWORD_U5: ${{ secrets.RAS_PASSWORD_U5 }}
+          RAS_EMAIL_U6: ${{ secrets.RAS_EMAIL_U6 }}
+          RAS_PASSWORD_U6: ${{ secrets.RAS_PASSWORD_U6 }}
+          RAS_EMAIL_U7: ${{ secrets.RAS_EMAIL_U7 }}
+          RAS_PASSWORD_U7: ${{ secrets.RAS_PASSWORD_U7 }}
+          RAS_EMAIL_U8: ${{ secrets.RAS_EMAIL_U8 }}
+          RAS_PASSWORD_U8: ${{ secrets.RAS_PASSWORD_U8 }}
+          RAS_EMAIL_U9: ${{ secrets.RAS_EMAIL_U9 }}
+          RAS_PASSWORD_U9: ${{ secrets.RAS_PASSWORD_U9 }}
+          RAS_EMAIL_U10: ${{ secrets.RAS_EMAIL_U10 }}
+          RAS_PASSWORD_U10: ${{ secrets.RAS_PASSWORD_U10 }}
 
       # Saved even when one user's check fails, so users that succeeded are not
       # emailed the same items again on the next run.

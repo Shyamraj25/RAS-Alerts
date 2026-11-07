@@ -105,34 +105,35 @@ starts the workflow instead.
 
 ## Add a person
 
-Each person gets one variable and two secrets, all named with the same
-capital-letter id (letters, numbers, or underscores; it appears in the public
-logs and workflow, so a neutral id such as `U3` keeps names private).
+No code or workflow edit is needed. The workflow already passes the secrets for
+the ids `ARPAN`, `SHYAM`, and `U1` to `U10`; pick one that is not in use. Ids
+appear in the public logs, so neutral ids such as `U3` keep names private.
 
-1. Add two **secrets** (Settings → Secrets and variables → Actions → Secrets):
+1. Add two **secrets** (Settings → Secrets and variables → Actions → Secrets),
+   using the same id in both names:
    - `RAS_EMAIL_U3`: their RAS login email
    - `RAS_PASSWORD_U3`: their RAS password (let them type it in)
-2. Add one **variable** (the Variables tab) named `RAS_USERS_U3`, whose value is
-   the address that should receive their alerts. Add `:cycle-id` if their
-   placement cycle differs from the default (`RAS_RC_ID` variable, or `18`),
-   for example `third.person@gmail.com:19`.
-3. Open `.github/workflows/ras-notices.yml`, copy one person's three lines in
-   the `env:` block of the "Check RAS" step, and change the id in all three:
+2. Edit the **variable** `RAS_USERS` (Variables tab) and add one line for them in
+   the form `id:alert-email`. Add `:cycle-id` if their placement cycle differs
+   from the default (`RAS_RC_ID` variable, or `18`). One person per line:
 
-   ```yaml
-   RAS_USERS_U3: ${{ vars.RAS_USERS_U3 }}
-   RAS_EMAIL_U3: ${{ secrets.RAS_EMAIL_U3 }}
-   RAS_PASSWORD_U3: ${{ secrets.RAS_PASSWORD_U3 }}
    ```
-
-   Secrets have to be listed by name. Passing the whole secrets object to the
-   script makes GitHub hold every run for manual approval ("this workflow file
-   may be malicious").
-4. In **Actions**, open **RAS notice email alerts** and click **Run workflow**.
+   U1:first.person@gmail.com
+   U2:second.person@gmail.com
+   U3:third.person@gmail.com:19
+   ```
+3. In **Actions**, open **RAS notice email alerts** and click **Run workflow**.
    A new person's first run saves a baseline and sends no email.
 
-**To remove a person**, delete their variable and two secrets, and delete their
-three lines from the workflow.
+**To remove a person**, delete their line from `RAS_USERS` and delete their two
+secrets.
+
+**Need more than 12 people, or a different id?** Open
+`.github/workflows/ras-notices.yml` and copy a `RAS_EMAIL_...` /
+`RAS_PASSWORD_...` pair in the `env:` block of the "Check RAS" step, changing
+the id. Secrets must be listed by name there: passing the whole secrets object
+to the script makes GitHub hold every run for manual approval ("this workflow
+file may be malicious").
 
 ## Troubleshooting
 
@@ -141,8 +142,8 @@ fails, the others still run, and the run is marked failed.
 
 | Log line | Fix |
 | --- | --- |
-| `Missing GitHub Actions secret RAS_EMAIL_U3` | Add the secret, and check the person's three lines in the workflow use exactly that name. |
-| `No RAS_USERS_<ID> variables found` | Add a `RAS_USERS_<ID>` variable and list it in the workflow. |
+| `Missing GitHub Actions secret RAS_EMAIL_U3 ...` | Add the secret with exactly that name, and use an id the workflow lists (`ARPAN`, `SHYAM`, `U1` to `U10`). |
+| `The RAS_USERS Actions variable is empty` | Add the `RAS_USERS` variable with one `id:alert-email` line per person. |
 | `RAS sign-in did not complete` | Wrong RAS email or password, or the portal asked for an OTP or CAPTCHA, which this workflow cannot complete. |
 | `redirected to login when opening the configured placement cycle` | Set that person's cycle id (the number in `/student/rc/<id>/` on the portal). |
 | `Gmail authorization failed (...)` | The three `GMAIL_*` secrets do not belong together, or the token expired or was revoked. Repeat step 2 above. |
