@@ -219,16 +219,25 @@ async function readAppliedCompanies(page, baseUrl) {
   );
   await setRowsPerPage(page);
   // Give the grid time to render every application row before reading it.
+  const expectedRows = Math.min(totalApplications, rowsPerPage);
   await page
     .waitForFunction(
       (expected) =>
         document.querySelectorAll('[role="row"]').length - 1 >= expected,
-      Math.min(totalApplications, rowsPerPage),
+      expectedRows,
       { timeout: 15000 },
     )
     .catch(() => {});
 
   const rows = await readGridRows(page);
+  // A short list would let new notices be marked seen without being matched
+  // against every applied company, so they would never be emailed. Fail the
+  // run instead; nothing is saved and the next run checks again.
+  if (rows.length < expectedRows) {
+    throw new Error(
+      `Read only ${rows.length} of ${expectedRows} applications; skipping this check so no notice is missed.`,
+    );
+  }
   return rows
     .map((cells) => cells[0]?.trim())
     .filter(Boolean)
@@ -450,6 +459,9 @@ async function checkUser(browser, gmail, user) {
 
     const notices = await readNotices(page, baseUrl);
     const openings = await readJobOpenings(page, baseUrl);
+    log(
+      `Read ${companies.length} application(s), ${notices.length} notice(s), ${openings.length} job opening(s).`,
+    );
     await processResults(gmail, user, log, { companies, notices, openings });
   } finally {
     await context.close();
